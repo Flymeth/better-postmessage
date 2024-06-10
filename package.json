@@ -1,9 +1,9 @@
 {
 	"name": "better-postmessage",
-	"version": "1.0.8", 
+	"version": "1.0.9",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-    "publish": "tsc && npm publish"
+		"publish": "tsc"
 	},
 	"repository": {
 		"url": "https://github.com/Flymeth/better-postmessage.git",

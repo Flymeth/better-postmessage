@@ -61,6 +61,12 @@ export default class BetterPostMessage<
 		);
 	}
 
+	private isAnswer(
+		proxy: ProxyMessage<Message | Answer>
+	): proxy is ProxyMessage<Answer> {
+		return !!("init_proxy" in proxy && proxy.init_proxy);
+	}
+
 	private messageReceived(proxy: ProxyMessage<Message, Answer>) {
 		//* The next 4 lines are here to prevent handling message sent from this context
 		const ignoredIndex = this.ignoreThoseProxies.indexOf(proxy.id);
@@ -69,7 +75,7 @@ export default class BetterPostMessage<
 			return;
 		}
 
-		if ("init_proxy" in proxy) {
+		if (this.isAnswer(proxy)) {
 			const responders = this.responders.filter(
 				(resp) => resp.proxyID === proxy.init_proxy
 			);
@@ -87,7 +93,12 @@ export default class BetterPostMessage<
 				this.deleteResponders(proxy.init_proxy);
 
 				responders.forEach((r) => r.promiseResponder(proxy.data));
-			}
+			} else
+				this.debug(
+					"Answer message received but no responders found for it.",
+					proxy,
+					this.responders
+				);
 		} else {
 			this.debug(
 				"Received message from message proxy <",

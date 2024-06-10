@@ -14,6 +14,7 @@ export default class BetterPostMessage<Message extends any, Answer = Message | v
     readonly options: Options;
     constructor(window: Window, options?: Options);
     private debug;
+    private isAnswer;
     private messageReceived;
     private deleteResponders;
     private generateID;

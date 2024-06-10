@@ -1,6 +1,6 @@
 {
 	"name": "better-postmessage",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "A promise-based with answer feature library to enhance the default window.postMessage method",
 	"main": "lib/index.js",
 	"scripts": {

@@ -40,10 +40,13 @@ export default class BetterPostMessage<
 		this.options = options || {};
 
 		window.addEventListener("message", ({ data }) => {
-			this.debug("Window message received : ", data)
-			"__BETTER_POST_MESSAGE" in data && data.__BETTER_POST_MESSAGE
-				? this.messageReceived(data as ProxyMessage<Message, Answer>)
-				: null;
+			this.debug("Window message received : ", data);
+			if (
+				typeof data === "object" &&
+				"__BETTER_POST_MESSAGE" in data &&
+				data.__BETTER_POST_MESSAGE
+			)
+				this.messageReceived(data as ProxyMessage<Message, Answer>);
 		});
 		this.debug("Instance created. NAME =", options?.name);
 	}
@@ -126,13 +129,19 @@ export default class BetterPostMessage<
 		data: D,
 		id?: id,
 		fromProxy?: id
-	) {
-		return {
+	): ProxyMessage<D> {
+		const base: ProxyMessage<D> = {
 			__BETTER_POST_MESSAGE: true,
 			id: id || this.generateID(),
 			data,
-			init_proxy: fromProxy,
-		} as ProxyMessage<D>;
+		};
+
+		return fromProxy
+			? {
+					...base,
+					init_proxy: fromProxy,
+			  }
+			: base;
 	}
 
 	post(message: Message): { messageID: id; answer: Promise<Answer> } {

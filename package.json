@@ -1,8 +1,6 @@
 {
 	"name": "better-postmessage",
-	"version": "1.0.7",
-	"description": "A promise-based with answer feature library to enhance the default window.postMessage method",
-	"main": "lib/index.js",
+	"version": "1.0.8", 
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
     "publish": "tsc && npm publish"

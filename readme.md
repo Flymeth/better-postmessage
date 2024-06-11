@@ -64,8 +64,8 @@ The Window-based context where to emit/receive messages
 The object containing all behavior options of the messenger.
 Here are the different options :
 
-KEY | DESCRIPTION | TYPE | DEFAULT VALUE
---|--|--|--
-name | The messenger name | `string` | `""`
-answerTimeout | In milliseconds, the maximum amount of time a message can wait for its answer | `number` | `15_000`
-debug | If you want to view what's appening behind the process | `boolean` | `false`
+| KEY           | DESCRIPTION                                                                                          | TYPE      | DEFAULT VALUE |
+| ------------- | ---------------------------------------------------------------------------------------------------- | --------- | ------------- |
+| tunnel        | Specify the custom tunnel of the proxy. Handler and message will be only receive/send to this tunnel | `string`  | `""`          |
+| answerTimeout | In milliseconds, the maximum amount of time a message can wait for its answer                        | `number`  | `15_000`      |
+| debug         | If you want to view what's appening behind the process                                               | `boolean` | `false`       |

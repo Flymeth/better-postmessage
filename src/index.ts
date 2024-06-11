@@ -134,6 +134,8 @@ export default class BetterPostMessage<
 				if (typeof answer === "undefined") return;
 
 				const answerProxy = this.proxyfy(answer, undefined, proxy.id);
+				this.ignoreThoseProxies.push(answerProxy.id);
+
 				this.window.postMessage(answerProxy);
 				this.debug(
 					"Handler <",
@@ -187,7 +189,7 @@ export default class BetterPostMessage<
 			"Proxified message posted:",
 			proxy,
 			"(answer timeout :",
-			timeout / 100,
+			timeout / 1000,
 			"seconds)."
 		);
 

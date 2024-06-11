@@ -53,7 +53,6 @@ export default class BetterPostMessage<
 		this.options = options || {};
 
 		window.addEventListener("message", ({ data }) => {
-			this.debug("Window message received : ", data);
 			if (
 				typeof data === "object" &&
 				"__BETTER_POST_MESSAGE" in data &&
@@ -103,13 +102,13 @@ export default class BetterPostMessage<
 			);
 			if (responders.length) {
 				this.debug(
-					"Received answer<",
+					"Received answer <",
 					proxy.id,
-					"> from message proxy <",
+					"> from proxy <",
 					proxy.init_proxy,
 					">.",
 					responders.length,
-					"handlers will be resolved. Answer content: ",
+					"message promises will be resolved. Answer content: ",
 					proxy.data
 				);
 				this.deleteResponders(proxy.init_proxy);
@@ -123,7 +122,7 @@ export default class BetterPostMessage<
 				);
 		} else {
 			this.debug(
-				"Received message from message proxy <",
+				"Received message from proxy <",
 				proxy.id,
 				">.",
 				this.handlers.length,
@@ -141,7 +140,7 @@ export default class BetterPostMessage<
 					handlerID,
 					"> has answered to the message <",
 					proxy.id,
-					">. The message answer have just been sent. Answer :",
+					"> with content :",
 					answer
 				);
 			});
@@ -183,7 +182,14 @@ export default class BetterPostMessage<
 		this.ignoreThoseProxies.push(proxy.id);
 
 		this.window.postMessage(proxy);
-		this.debug("Proxified message posted:", proxy);
+		const timeout = custom_timeout || this.options.answerTimeout || 15_000;
+		this.debug(
+			"Proxified message posted:",
+			proxy,
+			"(answer timeout :",
+			timeout / 100,
+			"seconds)."
+		);
 
 		const answer: ReturnType<typeof this.post>["answer"] = Promise.race([
 			new Promise<Answer>((res) => {
@@ -193,10 +199,7 @@ export default class BetterPostMessage<
 				});
 			}),
 			new Promise<never>((_, rej) => {
-				setTimeout(
-					() => rej("Response timeout reached."),
-					custom_timeout || this.options.answerTimeout || 15_000
-				);
+				setTimeout(() => rej("Response timeout reached."), timeout);
 			}),
 		]);
 
@@ -212,7 +215,7 @@ export default class BetterPostMessage<
 		};
 		this.handlers.push(handler_proxy);
 
-		this.debug("New handler has been registed:", handler_proxy);
+		this.debug("New handler has been registered:", handler_proxy);
 		return handler_proxy.id;
 	}
 	removeHandler(id: id): boolean {
@@ -220,7 +223,7 @@ export default class BetterPostMessage<
 		if (index < 0) return false;
 		this.handlers.splice(index, 1);
 
-		this.debug("Handler with id: <", id, "> has been deleted.");
+		this.debug("Handler <", id, "> has been deleted.");
 		return true;
 	}
 }

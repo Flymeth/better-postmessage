@@ -1,16 +1,25 @@
-interface Options {
-	name?: string;
+interface Options<T extends string> {
 	/**
-	 * In milliseconds, the maximum amount of time a message can wait for its answer.
+	 * Specify the custom tunnel of the proxy. Handler and message will be only receive/send to this tunnel.
+	 * Of omited, it will receive and send to all tunnels (note that tunneled proxy will not receive message from global tunnels).
+	 * ! Note that a tunnel cannot contain character ':'.
+	 */
+	tunnel?: string;
+	/**
+	 * In milliseconds, the default maximum amount of time a message can wait for its answer.
 	 * @default {15_000}
 	 */
 	answerTimeout?: number;
+	/**
+	 * Activate the log messages (in the debug console)
+	 */
 	debug?: boolean;
 }
-type id = `${`${string}_` | ""}${number}-${number}`;
+type id = `${`${string}::` | ""}${number}-${number}`;
 type ProxyMessage<M, A = M> = {
 	__BETTER_POST_MESSAGE: true;
 	id: id;
+	tunnel?: string;
 } & (
 	| {
 			data: M;
@@ -34,9 +43,13 @@ export default class BetterPostMessage<
 		promiseResponder: (res: Answer | PromiseLike<Answer>) => void;
 	}[] = [];
 	private ignoreThoseProxies: id[] = [];
-	readonly options: Options;
+	readonly options: Options<string>;
 
-	constructor(private window: Window, options?: Options) {
+	constructor(private window: Window, options?: Options<string>) {
+		if (options?.tunnel?.includes(":"))
+			throw new Error(
+				"Invalid tunnel name (note that tunnel cannot contain the character ':')."
+			);
 		this.options = options || {};
 
 		window.addEventListener("message", ({ data }) => {
@@ -48,14 +61,14 @@ export default class BetterPostMessage<
 			)
 				this.messageReceived(data as ProxyMessage<Message, Answer>);
 		});
-		this.debug("Instance created. NAME =", options?.name);
+		this.debug("Instance created. TUNNEL =", options?.tunnel || "<GLOBAL>");
 	}
 
 	private debug(...message: any[]) {
 		if (!this.options.debug) return;
 		console.debug(
 			`[BetterPostMessage${
-				this.options.name ? ` - ${this.options.name}` : ""
+				this.options.tunnel ? ` - ${this.options.tunnel}` : ""
 			}]>`,
 			...message
 		);
@@ -74,6 +87,15 @@ export default class BetterPostMessage<
 			this.ignoreThoseProxies.splice(ignoredIndex, 1);
 			return;
 		}
+
+		if (
+			this.options.tunnel &&
+			proxy.tunnel &&
+			this.options.tunnel !== proxy.tunnel
+		)
+			return this.debug(
+				`Blocked proxy from tunnel ${proxy.tunnel} because it doesn't match this tunnel (${this.options.tunnel}).`
+			);
 
 		if (this.isAnswer(proxy)) {
 			const responders = this.responders.filter(
@@ -132,8 +154,8 @@ export default class BetterPostMessage<
 		this.debug("Deleted all responders for proxy <", proxyID, ">.");
 	}
 	private generateID() {
-		const name = this.options?.name;
-		return ((name ? `${name}_` : "") +
+		const { tunnel } = this.options;
+		return ((tunnel ? `${tunnel}::` : "") +
 			`${Date.now()}-${Math.floor(Math.random() * 1000)}`) as id;
 	}
 	private proxyfy<D extends Message | Answer>(
@@ -141,21 +163,22 @@ export default class BetterPostMessage<
 		id?: id,
 		fromProxy?: id
 	): ProxyMessage<D> {
-		const base: ProxyMessage<D> = {
+		return {
 			__BETTER_POST_MESSAGE: true,
 			id: id || this.generateID(),
 			data,
+			tunnel: this.options.tunnel,
+			init_proxy: fromProxy,
 		};
-
-		return fromProxy
-			? {
-					...base,
-					init_proxy: fromProxy,
-			  }
-			: base;
 	}
 
-	post(message: Message): { messageID: id; answer: Promise<Answer> } {
+	post(
+		message: Message,
+		/**
+		 * Specify a custom timeout for this message (in milliseconds)
+		 */
+		custom_timeout?: number
+	): { messageID: id; answer: Promise<Answer> } {
 		const proxy = this.proxyfy(message);
 		this.ignoreThoseProxies.push(proxy.id);
 
@@ -172,27 +195,25 @@ export default class BetterPostMessage<
 			new Promise<never>((_, rej) => {
 				setTimeout(
 					() => rej("Response timeout reached."),
-					this.options.answerTimeout || 15_000
+					custom_timeout || this.options.answerTimeout || 15_000
 				);
 			}),
 		]);
 
 		return {
 			messageID: proxy.id,
-			get answer() {
-				return answer;
-			},
+			answer,
 		};
 	}
 	onReceive(handler: Handler<Message, Answer>): id {
-		const proxy: (typeof this.handlers)[number] = {
+		const handler_proxy: (typeof this.handlers)[number] = {
 			id: this.generateID(),
 			handler,
 		};
-		this.handlers.push(proxy);
+		this.handlers.push(handler_proxy);
 
-		this.debug("New handler has been registed:", proxy);
-		return proxy.id;
+		this.debug("New handler has been registed:", handler_proxy);
+		return handler_proxy.id;
 	}
 	removeHandler(id: id): boolean {
 		const index = this.handlers.findIndex((proxy) => proxy.id === id);

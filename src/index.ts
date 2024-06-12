@@ -131,7 +131,6 @@ export default class BetterPostMessage<
 			);
 			this.handlers.forEach(async ({ handler, id: handlerID }) => {
 				const answer = await handler(proxy.data);
-				if (typeof answer === "undefined") return;
 
 				const answerProxy = this.proxyfy(answer, undefined, proxy.id);
 				this.ignoreThoseProxies.push(answerProxy.id);
@@ -140,9 +139,9 @@ export default class BetterPostMessage<
 				this.debug(
 					"Handler <",
 					handlerID,
-					"> has answered to the message <",
+					"> has handled to the message <",
 					proxy.id,
-					"> with content :",
+					"> with answer :",
 					answer
 				);
 			});
